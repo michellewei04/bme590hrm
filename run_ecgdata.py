@@ -31,5 +31,3 @@ for n, file in enumerate(all_csv_files):
     ecg_data.data = files_dict[filename]
     ecg_data.autocorrelation(file_number)
     print('End running file {}'.format(file_number))
-
-
