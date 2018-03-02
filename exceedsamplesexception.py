@@ -1,0 +1,2 @@
+class ExceedSamplesException(Exception):
+    pass
