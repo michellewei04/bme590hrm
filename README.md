@@ -1,8 +1,8 @@
-# Unit tests and CI assignment
+# BME 590 Heart Rate Monitor
 
-[![Build Status](https://travis-ci.org/michellewei04/59ers_testing.svg?branch=master)](https://travis-ci.org/michellewei04/59ers_testing)
-[![Documentation Status](http://readthedocs.org/projects/59ers-testing/badge/?version=latest)](http://59ers-testing.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/michellewei04/bme590hrm.svg?branch=master)](https://travis-ci.org/michellewei04/bme590hrm)
+[![Documentation Status](https://readthedocs.org/projects/yw145bme590hrm/badge/?version=latest)](http://yw145bme590hrm.readthedocs.io/en/latest/?badge=latest)
 
-__Team Members:__ Michelle Wei (@michellewei04) Harvey Shi (@rvshi), Edward Liang (@edl11)
+__Contributors:__ Michelle Wei (@michellewei04)
 
-__Documentation:__ [readthedocs.org](http://59ers-testing.readthedocs.io/en/latest/)
+__Documentation:__ [readthedocs.org](http://yw145bme590hrm.readthedocs.io/en/latest/)
