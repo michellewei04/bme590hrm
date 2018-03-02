@@ -18,6 +18,8 @@ files_dict = collect_all_test_data()
 # 29 has nan values
 # 30 has bad data "sparse gaps"
 # 32 has values over 300 mV
+def main():
+    test_duration()
 
 def test_setter():
     logger.debug('Begin testing setter function')
@@ -49,8 +51,25 @@ def test_num_beats():
         if not (i == n for n in exception_files):
             assert num_beats == pytest.approx(output_beats[i], abs=3.)
     logger.debug('Complete testing number-of-beats calculations')
-#
-# def test_duration():
+
+def test_duration():
+    logger.debug('Begin testing duration')
+    output_duration = [27.775]*11 + [13.887]*10 + [39.996]*6 + [27.775] + [13.887]*3
+    test_file_numbers = list(range(32))
+    test_file_numbers.remove(29)
+    input_array = [None] * len(test_file_numbers)
+    for i, num in enumerate(test_file_numbers):
+        logger.debug('from file{}'.format(num + 1))
+        input_array[i] = files_dict['file{}'.format(num + 1)]
+    object_list = [EcgData(data=x) for x in input_array]
+    for i, obj in enumerate(object_list):
+        (data, duration) = obj.set_duration('seconds')
+        logger.debug('Duration test for file {0}, expected output: {1} +/- .1, test output: {2}'.
+                     format(i + 1, output_duration[i], duration))
+        assert duration == pytest.approx(output_duration[i], rel=.01)
+    print('Complete testing duration')
+    logger.debug('Complete testing duration')
+
 
 def test_calc_hr():
     logger.debug('Begin testing heart rate calculations')
@@ -74,4 +93,7 @@ def test_calc_hr():
         if not (i == n for n in exception_files):
             assert mean_hr_bpm == pytest.approx(output_hr[i], abs=5.)
     logger.debug('Complete testing heart rate calculations')
+
+if __name__ == "__main__":
+    main()
 

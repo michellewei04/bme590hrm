@@ -7,7 +7,7 @@ file_number = 0
 all_csv_files = glob('test_data/*.csv')
 if 'test_data/test_data30.csv' in all_csv_files:
     all_csv_files.remove('test_data/test_data30.csv')
-print(all_csv_files)
+# print(all_csv_files)
 for n, file in enumerate(all_csv_files):
     if len(file) == 24:
         file_number = int(file[19])
@@ -22,5 +22,3 @@ for n, file in enumerate(all_csv_files):
     print('Begin running file {}'.format(file_number))
     ecg_data = EcgData()
     ecg_data.data = files_dict[filename]
-    ecg_data.autocorrelate(file_number)
-    print('End running file {}'.format(file_number))

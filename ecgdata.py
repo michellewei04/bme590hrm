@@ -23,6 +23,36 @@ class EcgData():
         self.duration = duration
         self.num_beats = num_beats
         self.beats = beats
+        self.set_duration()
+        self.set_v_extremes()
+
+    def set_duration(self, time_unit):
+        """Returns duration of ECG recording
+
+            :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+            :param time_unit: user input for unit of time
+            :returns: duration of ECG recording in seconds and adjusts time in self.data to be seconds
+        """
+        time = self.data[:, 0]
+        if time_unit == 'seconds':
+            duration = np.nanmax(time)
+        elif time_unit == 'minutes':
+            duration = np.multiply(np.nanmax(time), 60)
+            self.data[:, 0] = np.multiply(time, 60)
+        else:
+            print('Please enter ''seconds'' or ''minutes''')
+        return self.data, duration
+
+    def set_v_extremes(self):
+        """Detects minimum and maximum lead voltages
+
+            :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+            :returns: tuple containing minimum and maximum lead voltages
+        """
+        voltages = self.data[:, 1]
+        self.voltage_extremes = (np.nanmin(voltages), np.nanmax(voltages))
+        return self.voltage_extremes
+
 
     def butter_bandpass(self):
         """Returns bandpass-filtered voltages
@@ -95,14 +125,6 @@ class EcgData():
         (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
         mean_hr_acorr = num_beats/self.max_time*60  # in bpm
         return mean_hr_acorr
-
-    # @property
-    # def duration(self):
-    #     logger.debug("Detect file duration")
-    #     return self.__duration
-    #
-    # @data.setter
-    # def duration(self, input('Time unit: ')):
 
     @property
     def data(self):
