@@ -2,7 +2,3 @@ pytest
 pytest-pep8
 numpy
 mock
-glob
-scipy
-matplotlib
-logging
