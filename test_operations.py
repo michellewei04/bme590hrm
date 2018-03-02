@@ -60,5 +60,9 @@ def test_calc_hr():
     logger.debug('Complete testing heart rate calculations')
 
 
+def test_num_beats():
+
+
+
 if __name__ == "__main__":
     main()
