@@ -11,48 +11,61 @@ logger = logging.getLogger(__name__)
 figures = [None] * 50
 
 
+
 class EcgData():
 
-    def __init__(self, file_number=None, data=pd.read_csv('test_data/test_data1.csv', na_values=0),
-                 mean_hr_bpm=None, voltage_extremes=None,
-                 duration=None, num_beats=None, beats=None):
-        self.file_number = file_number
+    def __init__(self, data=pd.read_csv('test_data/test_data1.csv', na_values=0), mean_hr_bpm=None,
+                 voltage_extremes=None, duration=None, num_beats=None, beats=None):
         self.data = data
+        self.max_time = np.nanmax(self.data[:, 0])
         self.mean_hr_bpm = mean_hr_bpm
         self.voltage_extremes = voltage_extremes
         self.duration = duration
         self.num_beats = num_beats
         self.beats = beats
 
-    # def calc_mean_hr_bpm(self):
-
     def butter_bandpass(self):
+        """Returns bandpass-filtered voltages
+
+            :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+            :returns: bandpass-filtered voltages
+            :returns: number of samples
+        """
         voltages = self.data[:, 1]
         time = self.data[:, 0]
-        max_time = np.nanmax(time)
+        self.max_time = np.nanmax(time)
         samples = len(voltages)
-        fs = samples / max_time
+        fs = samples / self.max_time
         nyq = 0.5 * fs
         cutoffs = {'low': 0.1 / nyq, 'high': 6 / nyq}
         order = 3
         bp_coeffs = butter(order, [cutoffs['low'], cutoffs['high']], btype='band')
-        filtered_data = lfilter(bp_coeffs[0], bp_coeffs[1], voltages)
-        return filtered_data, max_time, samples
+        filtered_data = np.square(lfilter(bp_coeffs[0], bp_coeffs[1], voltages))
+        return filtered_data, samples
 
-    def autocorrelation(self, file_number):
+    def autocorrelate(self):
+        """Returns number of samples in dataset and indices of peaks in voltages and the autocorrelation of voltages
+
+                :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+                :returns: number of samples in dataset
+                :returns: indices of peaks in voltages
+                :returns: indices of peaks in the autocorrelation of voltages
+        """
         voltages = self.data[:, 1]
         time = self.data[:, 0]
-        (filtered_data, max_time, samples) = self.butter_bandpass()
+        (filtered_data, samples) = self.butter_bandpass()
         autocorr = np.correlate(filtered_data, filtered_data, mode='same')
-        # autocorr = np.correlate(voltages, voltages, mode='same')
         autocorr = autocorr/np.mean(autocorr)
 
         hr_est = {'min_hr': 30, 'max_hr': 200}
-        sample_range = {'min_spb': samples/(hr_est['max_hr']*max_time/60),
-                        'max_spb': samples/(hr_est['min_hr']*max_time/60)}
+        sample_range = {'min_spb': samples/(hr_est['max_hr']*self.max_time/60),
+                        'max_spb': samples/(hr_est['min_hr']*self.max_time/60)}
         # autocorr_window = autocorr[int(samples / 2):]
-        autocorr_window = autocorr[int(samples/2+sample_range['min_spb']):int(samples/2+sample_range['max_spb'])]
-        peaks_index = find_peaks_cwt(autocorr_window, np.arange(30, 700), min_length=100)
+        # autocorr_window = autocorr[int(samples/2+sample_range['min_spb']):int(samples/2+sample_range['max_spb'])]
+        autocorr_window = autocorr
+        peaks_index = find_peaks_cwt(voltages, np.arange(9, 200), min_length=samples/self.max_time*0.08, noise_perc=5)
+        acorr_peaks_index = find_peaks_cwt(autocorr_window, np.arange(30, 700), min_length=samples/self.max_time*0.07,
+                                           noise_perc=25)
 
         if len(acorr_peaks_index) < 1:
             acorr_peaks_index = [0]
@@ -61,24 +74,35 @@ class EcgData():
             peaks_index = [0]
             print('No peaks detected in data')
 
-        figures[file_number] = plt.figure(file_number)
-        plt.subplot(311)
-        plt.plot(voltages)
-        plt.scatter(peaks_index, voltages[peaks_index], color='red')
-        plt.title('{0}, {1}'.format(len(peaks_index), len(acorr_peaks_index)))
+        # figures[file_number] = plt.figure(file_number)
+        # plt.subplot(311)
+        # plt.plot(voltages)
+        # plt.scatter(peaks_index, voltages[peaks_index], color='red')
+        # plt.title('{0}, {1}'.format(len(peaks_index), len(acorr_peaks_index)))
+        #
+        # plt.subplot(312)
+        # plt.plot(time, filtered_data)
+        #
+        # plt.subplot(313)
+        # plt.plot(autocorr_window)
+        # plt.scatter(acorr_peaks_index, autocorr_window[acorr_peaks_index], color='red')
+        # figures[file_number].show()
+        # figures[file_number].savefig('plots/fig{}.png'.format(file_number))
+        # print('End autocorrelation of file {}'.format(file_number))
 
-        plt.subplot(312)
-        plt.plot(time, filtered_data)
+        return samples, acorr_peaks_index, peaks_index
 
-        plt.subplot(313)
-        plt.plot(autocorr_window)
-        plt.scatter(acorr_peaks_index, autocorr_window[acorr_peaks_index], color='red')
-        figures[file_number].show()
-        print('End autocorrelation of file {}'.format(file_number))
+    def calc_mean_hr(self):
+        """Returns mean heart rate
 
-    # def detect_acorr_peaks(self):
-    #     peaks_index = find_peaks_cwt(autocorr_window, np.arange(1, 40)
-    #     plt.scatter(np.array(peaks_index), color = 'red')
+        :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+        :returns: mean heart rate in beats per minute
+        """
+        (samples, acorr_peaks_index, peaks_index) = self.autocorrelate()
+        mean_hr_acorr = len(acorr_peaks_index)/self.max_time*60  # in bpm
+        mean_hr = len(peaks_index)/self.max_time*60  # in bpm
+        return mean_hr_acorr
+
 
     @property
     def data(self):

@@ -2,13 +2,6 @@ import pandas as pd
 from ecgdata import EcgData
 from glob import glob
 
-
-# test_data1 = pd.read_csv('test_data/test_data25.csv', na_values=0)
-# ecg_data1 = EcgData()
-# ecg_data1.data = test_data1
-# # print(test_data1.iloc[:, 1].values)
-# ecg_data1.autocorrelation()
-
 files_dict = {}
 file_number = 0
 all_csv_files = glob('test_data/*.csv')
@@ -29,7 +22,5 @@ for n, file in enumerate(all_csv_files):
     print('Begin running file {}'.format(file_number))
     ecg_data = EcgData()
     ecg_data.data = files_dict[filename]
-    ecg_data.autocorrelation(file_number)
+    ecg_data.autocorrelate(file_number)
     print('End running file {}'.format(file_number))
-
-
