@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 figures = [None] * 50
 
 
-
 class EcgData():
 
     def __init__(self, data=pd.read_csv('test_data/test_data1.csv', na_values=0), mean_hr_bpm=None,
@@ -23,7 +22,7 @@ class EcgData():
         self.duration = duration
         self.num_beats = num_beats
         self.beats = beats
-        self.set_duration()
+        self.set_duration('seconds')
         self.set_v_extremes()
 
     def set_duration(self, time_unit):
@@ -52,7 +51,6 @@ class EcgData():
         voltages = self.data[:, 1]
         self.voltage_extremes = (np.nanmin(voltages), np.nanmax(voltages))
         return self.voltage_extremes
-
 
     def butter_bandpass(self):
         """Returns bandpass-filtered voltages

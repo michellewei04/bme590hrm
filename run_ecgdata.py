@@ -1,6 +1,7 @@
 import pandas as pd
 from ecgdata import EcgData
 from glob import glob
+import numpy as np
 
 files_dict = {}
 file_number = 0
@@ -22,3 +23,5 @@ for n, file in enumerate(all_csv_files):
     print('Begin running file {}'.format(file_number))
     ecg_data = EcgData()
     ecg_data.data = files_dict[filename]
+    print('file {0}, min: {1}, max:{2}'.format(file_number, np.nanmin(ecg_data.data[:, 1]),
+                                               np.nanmax(ecg_data.data[:, 1])))
