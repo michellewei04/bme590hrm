@@ -55,17 +55,11 @@ class EcgData():
         time = self.data[:, 0]
         (filtered_data, samples) = self.butter_bandpass()
         autocorr = np.correlate(filtered_data, filtered_data, mode='same')
-        autocorr = autocorr/np.mean(autocorr)
-
-        hr_est = {'min_hr': 30, 'max_hr': 200}
-        sample_range = {'min_spb': samples/(hr_est['max_hr']*self.max_time/60),
-                        'max_spb': samples/(hr_est['min_hr']*self.max_time/60)}
-        # autocorr_window = autocorr[int(samples / 2):]
-        # autocorr_window = autocorr[int(samples/2+sample_range['min_spb']):int(samples/2+sample_range['max_spb'])]
         autocorr_window = autocorr
         peaks_index = find_peaks_cwt(voltages, np.arange(9, 200), min_length=samples/self.max_time*0.08, noise_perc=5)
         acorr_peaks_index = find_peaks_cwt(autocorr_window, np.arange(30, 700), min_length=samples/self.max_time*0.07,
                                            noise_perc=25)
+        self.num_beats = len(acorr_peaks_index)
 
         if len(acorr_peaks_index) < 1:
             acorr_peaks_index = [0]
@@ -90,7 +84,7 @@ class EcgData():
         # figures[file_number].savefig('plots/fig{}.png'.format(file_number))
         # print('End autocorrelation of file {}'.format(file_number))
 
-        return samples, acorr_peaks_index, peaks_index
+        return samples, acorr_peaks_index, peaks_index, self.num_beats
 
     def calc_mean_hr(self):
         """Returns mean heart rate
@@ -98,11 +92,17 @@ class EcgData():
         :param self: pandas DataFrame containing ecg data with two columns: time and voltage
         :returns: mean heart rate in beats per minute
         """
-        (samples, acorr_peaks_index, peaks_index) = self.autocorrelate()
-        mean_hr_acorr = len(acorr_peaks_index)/self.max_time*60  # in bpm
-        mean_hr = len(peaks_index)/self.max_time*60  # in bpm
+        (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
+        mean_hr_acorr = num_beats/self.max_time*60  # in bpm
         return mean_hr_acorr
 
+    # @property
+    # def duration(self):
+    #     logger.debug("Detect file duration")
+    #     return self.__duration
+    #
+    # @data.setter
+    # def duration(self, input('Time unit: ')):
 
     @property
     def data(self):
@@ -140,13 +140,6 @@ class EcgData():
         if not (len(shape) == 2 and shape[1] == 2):
             logger.error("TypeError in data: data array must have two columns")
             raise TypeError('Data array must have two columns, array shape = ' '{}'.format(np.shape(raw_data)))
-
-        if shape[0] > 100000:
-            logger.error("Too many samples, number of samples must be less than 100,000")
-            raise ExceedSamplesException('Number of samples cannot exceed 100,000')
-        elif shape[0] > 90000:
-            logger.warning('Number of samples is %s, close to exceeding limit of 100,000' % shape[0])
-            print('Number of samples is %s, close to exceeding limit of 100,000' % shape[0])
 
         if any(num > 300 for num in raw_data[:, 1]):
             logger.warning("Voltage values exceed the normal range of ECG data at 300 mV")
