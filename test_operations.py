@@ -1,30 +1,3 @@
-<<<<<<< HEAD
-import pandas as pd
-import numpy as np
-from glob import glob
-
-
-
-def main():
-    collect_all_test_data()
-
-
-def collect_all_test_data():
-    # samples 16-21 are simulated (beautiful)
-    # sample 23-34 are really fast
-    # 25-26 have heart problems
-    # 28 has NaN values
-    # 29 has nan values
-    # 30 has strings
-    # 31 has bad data "sparse gaps"
-    # 32 has values over 300 mV
-    files_dict = {}
-    all_files = glob('test_data/*.csv')
-    for n, file in enumerate(all_files):
-        filename = 'file%d' % n
-        files_dict[filename] = pd.read_csv(file, delimiter=',', index_col=None)
-    pass
-=======
 from inputlist import InputList
 import logging
 from logging_config import config
@@ -46,22 +19,61 @@ files_dict = collect_all_test_data()
 # 30 has bad data "sparse gaps"
 # 32 has values over 300 mV
 
-
-def main():
-    test_setter()
-
-
 def test_setter():
     logger.debug('Begin testing setter function')
-    error_input_list = files_dict['test_data/test_data30.csv']
-
-    error_output_list = TypeError
-    # loop over exception triggers and module functions
-    for i, l in enumerate(error_input_list):
-        with pytest.raises(error_output_list[i]):
-            InputList(nums=l)
+    error_input_array = [files_dict['file30']]
+    error_output = [TypeError]
+    for i, l in enumerate(error_input_array):
+        logger.debug('index is {}'.format(i))
+        with pytest.raises(error_output[i]):
+            EcgData(data=l)
     logger.debug('Complete testing check inputs function')
 
 
-if __name__ == "__main__":
-    main()
+def test_calc_hr():
+    logger.debug('Begin testing heart rate calculations')
+    output_beats = [34, 32, 34, 32, 35, 38, 31, 32, 28, 44, 32, 9, 4, 14, 7, 19, 19, 19,
+                 19, 19, 19, 37, 75, 80, 29, 37, 63, 34, 9, 19, 19]
+    test_file_numbers = list(range(32))
+    test_file_numbers.remove(29)
+    input_array = [None] * len(test_file_numbers)
+    for i, num in enumerate(test_file_numbers):
+        logger.debug('from file{}'.format(num+1))
+        input_array[i] = files_dict['file{}'.format(num+1)]
+    object_list = [EcgData(data=x) for x in input_array]
+    max_time_array = [x.max_time for x in object_list]
+    output_hr = np.multiply(np.divide(output_beats, max_time_array), 60)
+    output_hr = [float(i) for i in output_hr.tolist()]
+    exception_files = [7, 12, 13, 15, 24, 29]
+    for i, obj in enumerate(object_list):
+        mean_hr_bpm = obj.calc_mean_hr()
+        logger.debug('Heart rate test for file {0}, expected output: {1} +/- 5, test output: {2}'.
+                     format(i+1, int(output_hr[i]), int(mean_hr_bpm)))
+        if not (i == n for n in exception_files):
+            assert mean_hr_bpm == pytest.approx(output_hr[i], abs=5.)
+    logger.debug('Complete testing heart rate calculations')
+
+
+def test_num_beats():
+    logger.debug('Begin testing number of beats')
+    output_beats = [34, 32, 34, 32, 35, 38, 31, 32, 28, 44, 32, 9, 4, 14, 7, 19, 19, 19,
+                    19, 19, 19, 37, 75, 80, 29, 37, 63, 34, 9, 19, 19]
+    test_file_numbers = list(range(32))
+    test_file_numbers.remove(29)
+    input_array = [None] * len(test_file_numbers)
+    for i, num in enumerate(test_file_numbers):
+        logger.debug('from file{}'.format(num + 1))
+        input_array[i] = files_dict['file{}'.format(num + 1)]
+    object_list = [EcgData(data=x) for x in input_array]
+
+    exception_files = [7, 12, 13, 15, 24, 29]
+    for i, obj in enumerate(object_list):
+        (samples, acorr_peaks_index, peaks_index, num_beats) = obj.autocorrelate()
+        logger.debug('Number-of-beats test for file {0}, expected output: {1} +/- 5, test output: {2}'.
+                     format(i + 1, output_beats[i], num_beats))
+        if not (i == n for n in exception_files):
+            assert num_beats == pytest.approx(output_beats[i], abs=3.)
+    logger.debug('Complete testing number-of-beats calculations')
+#
+# def test_duration():
+
