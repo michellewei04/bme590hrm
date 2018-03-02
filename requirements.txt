@@ -4,3 +4,4 @@ numpy
 mock
 pandas
 matplotlib
+scipy
