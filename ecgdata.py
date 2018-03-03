@@ -149,7 +149,7 @@ class EcgData():
         diff = acorr_peaks_index[0] - peaks_index[0]
         new_peaks_index = [None] * len(acorr_peaks_index)
         if diff <= 300:
-            new_peaks_index[:] = [x-diff for x in acorr_peaks_index]
+            new_peaks_index[:] = [x - diff for x in acorr_peaks_index]
             if np.max(new_peaks_index) <= len(time):
                 beat_times = time[new_peaks_index]
             else:
