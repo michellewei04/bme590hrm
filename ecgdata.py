@@ -84,8 +84,8 @@ class EcgData():
         (filtered_data, samples) = self.butter_bandpass()
         autocorr = np.correlate(filtered_data, filtered_data, mode='same')
         autocorr_window = autocorr
-        peaks_index = find_peaks_cwt(voltages, np.arange(9, 200), min_length=samples/self.max_time*0.08, noise_perc=5)
-        acorr_peaks_index = find_peaks_cwt(autocorr_window, np.arange(30, 700), min_length=samples/self.max_time*0.07,
+        peaks_index = find_peaks_cwt(voltages, np.arange(9, 200), min_length=samples / self.max_time * 0.08, noise_perc=5)
+        acorr_peaks_index = find_peaks_cwt(autocorr_window, np.arange(30, 700), min_length=samples / self.max_time * 0.07,
                                            noise_perc=25)
         self.num_beats = len(acorr_peaks_index)
 
@@ -121,8 +121,31 @@ class EcgData():
         :returns: mean heart rate in beats per minute
         """
         (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
-        mean_hr_acorr = num_beats/self.max_time*60  # in bpm
+        mean_hr_acorr = num_beats / self.max_time * 60  # in bpm
         return mean_hr_acorr
+
+    def get_beat_times(self):
+        """Returns times when a beat occurred
+
+                :param self: pandas DataFrame containing ecg data with two columns: time and voltage
+                :returns: numpy array of times (in seconds) when a beat occurred
+        """
+        time = self.data[:, 0]
+        (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
+        diff = acorr_peaks_index[0] - peaks_index[0]
+        if diff <= 300:
+            new_peaks_index = acorr_peaks_index - diff
+            if np.max(new_peaks_index) <= len(time):
+                beat_times = time[new_peaks_index]
+            else:
+                new_peaks_index = new_peaks_index[:len(new_peaks_index)-1]
+                beat_times = time[new_peaks_index]
+        else:
+            new_peaks_index = acorr_peaks_index
+            beat_times = time[new_peaks_index]
+        raw_times = time[peaks_index]
+        self.beats = np.array(beat_times)
+        return self.beats, raw_times, peaks_index, new_peaks_index
 
     @property
     def data(self):

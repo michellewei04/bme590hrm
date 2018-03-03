@@ -1,2 +1,0 @@
-class ExceedSamplesException(Exception):
-    pass
