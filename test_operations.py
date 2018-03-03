@@ -2,7 +2,7 @@ from ecgdata import EcgData
 import logging
 from logging_config import config
 import pytest
-from import_test_files import collect_all_test_data
+from import_test_files import collect_data
 import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
@@ -13,35 +13,28 @@ logger = logging.getLogger(__name__)
 
 all_csv_files = glob('test_data/*.csv')
 
-# samples 16-21 are simulated (beautiful)
-# sample 23-34 are really fast
-# 25-26 have heart problems
-# 28 has NaN values
-# 29 has nan values
-# 30 has bad data "sparse gaps"
-# 32 has values over 300 mV
-
 
 def main():
     test_beats()
 
 
-def test_setter():
+def test_get_data():
     logger.debug('Begin testing setter function')
-    error_file = 'test_data/test_data30.csv'
-    error_output = [TypeError]
-    for i, file in enumerate(error_file):
-        with pytest.raises(error_output[i]):
-            EcgData(filename=file)
+    error_file = ['test_data/test_data30.csv']
+    with pytest.raises(TypeError):
+        EcgData(filename=error_file)
     logger.debug('Complete testing check inputs function')
 
 
 def test_duration():
     logger.debug('Begin testing duration')
-    output_duration = [27.775] * 11 + [13.887] * 10 + [39.996] * 6 + [27.775] + [13.887] * 3
-    filename_array = all_csv_files.remove('test_data/test_data30.csv')
-    print(filename_array)
-    object_list = [EcgData(filename=x) for x in filename_array]
+    output_duration = [27.775, 13.887, 39.996, 27.775, 13.887]
+    test_file_numbers = [1, 13, 24, 28, 31]
+    filename_array = [None] * len(test_file_numbers)
+
+    for i, num in enumerate(test_file_numbers):
+        filename_array[i] = 'test_data/test_data{}.csv'.format(num)
+    object_list = [EcgData(filename=x, data=collect_data(x)) for x in filename_array]
     for i, obj in enumerate(object_list):
         (data, duration) = obj.set_duration('seconds')
         logger.debug('Duration test for file {0}, expected output: {1} +/- .1, test output: {2}'.
@@ -59,8 +52,8 @@ def test_voltage_extremes():
     filename_array = [None] * len(test_file_numbers)
     for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
-
-    object_list = [EcgData(filename=x) for x in filename_array]
+    print(filename_array)
+    object_list = [EcgData(filename=x, data=collect_data(x)) for x in filename_array]
     for i, obj in enumerate(object_list):
         logger.debug('Duration test for file {0}, expected output: {1} +/- .1, test output: {2}'.
                      format(i + 1, output_extremes[i], obj.voltage_extremes))
@@ -77,8 +70,8 @@ def test_num_beats():
     for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
-    object_list = [EcgData(filename=x) for x in filename_array]
-
+    object_list = [EcgData(filename=x, data=collect_data(x)) for x in filename_array]
+    print(object_list)
     for i, obj in enumerate(object_list):
         (samples, acorr_peaks_index, peaks_index, num_beats) = obj.autocorrelate()
         logger.debug('Number-of-beats test for file {0}, expected output: {1} +/- 5, test output: {2}'.
@@ -89,39 +82,35 @@ def test_num_beats():
 
 def test_calc_hr():
     logger.debug('Begin testing heart rate calculations')
-    output_beats = [34, 32, 34, 32, 35, 38, 31, 32, 28, 44, 32, 9, 4, 14, 7, 19, 19, 19,
-                    19, 19, 19, 37, 75, 80, 29, 37, 63, 34, 9, 19, 19]
-    test_file_numbers = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 31, 32]
+    output_beats = [34, 35, 38, 32, 19, 75, 34, 19]
+    test_file_numbers = [1, 5, 6, 11, 18, 23, 28, 31]
     filename_array = [None] * len(test_file_numbers)
     for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
-    object_list = [EcgData(filename=x) for x in filename_array]
+    object_list = [EcgData(filename=x, data=collect_data(x)) for x in filename_array]
     max_time_array = [x.max_time for x in object_list]
     output_hr = np.multiply(np.divide(output_beats, max_time_array), 60)
     output_hr = [float(i) for i in output_hr.tolist()]
     exception_files = [7, 12, 13, 15, 24, 29]
     for i, obj in enumerate(object_list):
-        mean_hr_bpm = obj.calc_mean_hr()
         logger.debug('Heart rate test for file {0}, expected output: {1} +/- 5, test output: {2}'.
-                     format(i + 1, int(output_hr[i]), int(mean_hr_bpm)))
+                     format(i + 1, int(output_hr[i]), int(obj.mean_hr_bpm)))
         if not (i == n for n in exception_files):
-            assert mean_hr_bpm == pytest.approx(output_hr[i], abs=5.)
+            assert obj.mean_hr_bpm == pytest.approx(output_hr[i], abs=5.)
     logger.debug('Complete testing heart rate calculations')
 
 
 def test_beats():
     logger.debug('Begin testing get_beat_times')
-    figures = [None] * 4
     test_file_numbers = [1, 3, 21, 31]
     filename_array = [None] * len(test_file_numbers)
+    object_list = [None] * len(test_file_numbers)
+    figures = [None] * len(test_file_numbers)
     for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
-
-    object_list = [EcgData(filename=x) for x in filename_array]
-    print(object_list)
-    for i, obj in enumerate(object_list):
-        (beat_times, output_beat_times, peaks_index, new_peaks_index) = obj.get_beat_times()
+        object_list[i] = EcgData(filename=filename_array[i], data=collect_data(filename_array[i]))
+        (beat_times, output_beat_times, peaks_index, new_peaks_index) = object_list[i].get_beat_times()
         logger.debug('Test the first 10 beat times for file {0}, expected output: {1}, test output: {2}'.
                      format(num, output_beat_times[:10], beat_times[:10]))
         assert beat_times[:10] == pytest.approx(output_beat_times[:10], abs=0.3)
