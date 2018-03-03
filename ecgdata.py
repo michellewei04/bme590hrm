@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import logging
 from logging_config import config
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter, find_peaks_cwt
+from bisect import bisect_left
 
 logging.basicConfig(**config)
 logger = logging.getLogger(__name__)
@@ -13,17 +14,21 @@ figures = [None] * 50
 
 class EcgData():
 
-    def __init__(self, data=pd.read_csv('test_data/test_data1.csv', na_values=0), mean_hr_bpm=None,
+    def __init__(self, filename, data, mean_hr_bpm=None,
                  voltage_extremes=None, duration=None, num_beats=None, beats=None):
+        self.filename = filename
         self.data = data
-        self.max_time = np.nanmax(self.data[:, 0])
         self.mean_hr_bpm = mean_hr_bpm
         self.voltage_extremes = voltage_extremes
         self.duration = duration
         self.num_beats = num_beats
         self.beats = beats
+        # self.set_duration(input('Are the time units in minutes or seconds? '))
         self.set_duration('seconds')
         self.set_v_extremes()
+        # self.calc_mean_hr(float(input('Calculate mean heart rate over __ minutes: ')))
+        self.calc_mean_hr(self.duration)
+        self.get_beat_times()
 
     def set_duration(self, time_unit):
         """Returns duration of ECG recording
@@ -34,13 +39,13 @@ class EcgData():
         """
         time = self.data[:, 0]
         if time_unit == 'seconds':
-            duration = np.nanmax(time)
+            self.duration = np.nanmax(time)
         elif time_unit == 'minutes':
-            duration = np.multiply(np.nanmax(time), 60)
+            self.duration = np.multiply(np.nanmax(time), 60)
             self.data[:, 0] = np.multiply(time, 60)
         else:
             print('Please enter ''seconds'' or ''minutes''')
-        return self.data, duration
+        return self.data, self.duration
 
     def set_v_extremes(self):
         """Detects minimum and maximum lead voltages
@@ -114,15 +119,24 @@ class EcgData():
 
         return samples, acorr_peaks_index, peaks_index, self.num_beats
 
-    def calc_mean_hr(self):
+    def calc_mean_hr(self, time_period):
         """Returns mean heart rate
 
         :param self: pandas DataFrame containing ecg data with two columns: time and voltage
         :returns: mean heart rate in beats per minute
         """
         (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
-        mean_hr_acorr = num_beats / self.max_time * 60  # in bpm
-        return mean_hr_acorr
+        time_period = time_period / 60
+        if time_period >= self.max_time:
+            mean_hr_acorr = num_beats / self.max_time * 60  # in bpm
+        if time_period < self.max_time:
+            time_lim = self.data[:(bisect_left(self.data[:, 0], time_period))]
+            index_lim = len(time_lim)
+            lim_peaks = acorr_peaks_index[:(bisect_left(acorr_peaks_index, index_lim))]
+            num_beats = len(lim_peaks)
+            mean_hr_acorr = num_beats / time_period * 60
+        self.mean_hr_bpm = mean_hr_acorr
+        return self.mean_hr_bpm
 
     def get_beat_times(self):
         """Returns times when a beat occurred
@@ -133,59 +147,18 @@ class EcgData():
         time = self.data[:, 0]
         (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
         diff = acorr_peaks_index[0] - peaks_index[0]
+        new_peaks_index = [None] * len(acorr_peaks_index)
         if diff <= 300:
-            new_peaks_index = acorr_peaks_index - diff
+            new_peaks_index[:] = [x - diff for x in acorr_peaks_index]
             if np.max(new_peaks_index) <= len(time):
                 beat_times = time[new_peaks_index]
             else:
-                new_peaks_index = new_peaks_index[:len(new_peaks_index)-1]
+                new_peaks_index = new_peaks_index[:(len(new_peaks_index) - 5)]
                 beat_times = time[new_peaks_index]
         else:
+            logger.warning('Sparse peaks detected in data, beat times may be inaccurate')
             new_peaks_index = acorr_peaks_index
             beat_times = time[new_peaks_index]
         raw_times = time[peaks_index]
         self.beats = np.array(beat_times)
         return self.beats, raw_times, peaks_index, new_peaks_index
-
-    @property
-    def data(self):
-        logger.debug("Getting data as 2-column array")
-        return self.__data
-
-    @data.setter
-    def data(self, raw_data):
-        """ Sets raw_data into desired format
-
-               :param self: pandas DataFrame containing ecg data with two columns: time and voltage
-               :raises TypeError: All input in list must be numbers
-               :raises TypeError: Input array must have two columns
-               :raises ExceedSampleException: Sample in input array must not exceed 100,000
-               """
-
-        if type(raw_data) is pd.DataFrame:
-            if any(num == np.NaN for num in raw_data.iloc[:, 1].values):
-                logger.warning("Data contains NaN values")
-            if any(num == np.nan for num in raw_data.iloc[:, 1].values):
-                logger.warning("Data contains nan values")
-            if any(isinstance(num, str) for num in raw_data.iloc[:, 1].values):
-                logger.error("TypeError in input list: input contains strings")
-                raise TypeError("All inputs in list must be numbers, input contains strings")
-
-            raw_data.iloc[:, 1].fillna(0, inplace=True)
-            raw_data.iloc[:, 0].fillna(np.nan, inplace=True)
-            raw_data = raw_data.values
-
-        if not all([type(num) is float or int for num in raw_data]):
-            logger.error("TypeError in input list: All inputs must be numbers")
-            raise TypeError('All inputs in list must be numbers.')
-
-        shape = np.shape(raw_data)
-        if not (len(shape) == 2 and shape[1] == 2):
-            logger.error("TypeError in data: data array must have two columns")
-            raise TypeError('Data array must have two columns, array shape = ' '{}'.format(np.shape(raw_data)))
-
-        if any(num > 300 for num in raw_data[:, 1]):
-            logger.warning("Voltage values exceed the normal range of ECG data at 300 mV")
-
-        logger.debug("Setting data")
-        self.__data = raw_data
