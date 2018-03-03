@@ -138,7 +138,8 @@ def test_beats():
         # plt.plot(obj.data[:, 0], obj.data[:, 1])
         # plt.scatter(output_beat_times[:10], obj.data[:, 1][new_peaks_index[:10]], color='red')
         # plt.scatter(beat_times[:10], obj.data[:, 1][peaks_index[:10]], color='blue')
-        # plt.title('file{0}, avg error = {1}'.format(test_file_numbers[i] + 1, np.average(output_beat_times[:10] - beat_times[:10])))
+        # plt.title('file{0}, avg error = {1}'.format(test_file_numbers[i] +
+        # 1, np.average(output_beat_times[:10] - beat_times[:10])))
         #
         # figures[i].show()
         # figures[i].savefig('plots/BeatTime{}.png'.format(test_file_numbers[i] + 1))

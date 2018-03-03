@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import logging
 from logging_config import config
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter, find_peaks_cwt
 
 logging.basicConfig(**config)
@@ -13,8 +13,10 @@ figures = [None] * 50
 
 class EcgData():
 
-    def __init__(self, data=pd.read_csv('test_data/test_data1.csv', na_values=0), mean_hr_bpm=None,
+    def __init__(self, filename, data=pd.read_csv('test_data/test_data1.csv', na_values=0), mean_hr_bpm=None,
                  voltage_extremes=None, duration=None, num_beats=None, beats=None):
+        self.filename = filename
+        self.get_data()
         self.data = data
         self.max_time = np.nanmax(self.data[:, 0])
         self.mean_hr_bpm = mean_hr_bpm
@@ -24,6 +26,12 @@ class EcgData():
         self.beats = beats
         self.set_duration('seconds')
         self.set_v_extremes()
+        self.autocorrelate()
+        self.calc_mean_hr()
+        self.get_beat_times()
+
+    def get_data(self):
+        self.data = pd.read_csv(self.filename)
 
     def set_duration(self, time_unit):
         """Returns duration of ECG recording
@@ -34,13 +42,13 @@ class EcgData():
         """
         time = self.data[:, 0]
         if time_unit == 'seconds':
-            duration = np.nanmax(time)
+            self.duration = np.nanmax(time)
         elif time_unit == 'minutes':
-            duration = np.multiply(np.nanmax(time), 60)
+            self.duration = np.multiply(np.nanmax(time), 60)
             self.data[:, 0] = np.multiply(time, 60)
         else:
             print('Please enter ''seconds'' or ''minutes''')
-        return self.data, duration
+        return self.data, self.duration
 
     def set_v_extremes(self):
         """Detects minimum and maximum lead voltages
@@ -122,7 +130,8 @@ class EcgData():
         """
         (samples, acorr_peaks_index, peaks_index, num_beats) = self.autocorrelate()
         mean_hr_acorr = num_beats / self.max_time * 60  # in bpm
-        return mean_hr_acorr
+        self.mean_hr_bpm = mean_hr_acorr
+        return self.mean_hr_bpm
 
     def get_beat_times(self):
         """Returns times when a beat occurred
