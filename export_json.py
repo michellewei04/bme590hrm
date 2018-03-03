@@ -5,6 +5,7 @@ from ecgdata import EcgData
 import os
 import re
 import json
+from import_test_files import collect_data
 
 
 def main():
@@ -20,7 +21,7 @@ def export_json():
 
     for i, csvfile in enumerate(allcsvfiles):
         if csvfile != 'test_data/test_data30.csv':
-            obj = EcgData(filename=csvfile)
+            obj = EcgData(filename=csvfile, data=collect_data(csvfile))
             filename = os.path.splitext(csvfile)[0]
             jsonfile = filename + '.json'
             print(jsonfile)

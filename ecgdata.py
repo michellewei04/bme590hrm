@@ -153,7 +153,7 @@ class EcgData():
             if np.max(new_peaks_index) <= len(time):
                 beat_times = time[new_peaks_index]
             else:
-                new_peaks_index = new_peaks_index[:(len(new_peaks_index) - 5)]
+                new_peaks_index = new_peaks_index[:(bisect_left(new_peaks_index, 10000))]
                 beat_times = time[new_peaks_index]
         else:
             logger.warning('Sparse peaks detected in data, beat times may be inaccurate')
