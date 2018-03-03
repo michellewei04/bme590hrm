@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = bme590hrm
+SPHINXPROJ    = MichellesHeartRateMonitor
 SOURCEDIR     = .
 BUILDDIR      = _build
 

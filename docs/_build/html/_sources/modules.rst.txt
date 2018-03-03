@@ -5,7 +5,7 @@ bme590hrm
    :maxdepth: 4
 
    ecgdata
-   exceedsamplesexception
+   export_json
    import_test_files
    logging_config
    run_ecgdata
