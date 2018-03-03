@@ -147,7 +147,7 @@ class EcgData():
             if np.max(new_peaks_index) <= len(time):
                 beat_times = time[new_peaks_index]
             else:
-                new_peaks_index = new_peaks_index[:len(new_peaks_index)-1]
+                new_peaks_index = new_peaks_index[:len(new_peaks_index) - 1]
                 beat_times = time[new_peaks_index]
         else:
             new_peaks_index = acorr_peaks_index
