@@ -11,7 +11,6 @@ from glob import glob
 logging.basicConfig(**config)
 logger = logging.getLogger(__name__)
 
- # files_dict = collect_all_test_data()
 all_csv_files = glob('test_data/*.csv')
 
 # samples 16-21 are simulated (beautiful)
@@ -29,12 +28,11 @@ def main():
 
 def test_setter():
     logger.debug('Begin testing setter function')
-    error_input_array = [files_dict['file30']]
+    error_file = 'test_data/test_data30.csv'
     error_output = [TypeError]
-    for i, l in enumerate(error_input_array):
-        logger.debug('index is {}'.format(i))
+    for i, file in enumerate(error_file):
         with pytest.raises(error_output[i]):
-            EcgData(data=l)
+            EcgData(filename=l)
     logger.debug('Complete testing check inputs function')
 
 
@@ -43,9 +41,6 @@ def test_duration():
     output_duration = [27.775] * 11 + [13.887] * 10 + [39.996] * 6 + [27.775] + [13.887] * 3
     filename_array = all_csv_files.remove('test_data/test_data30.csv')
 
-    for i, num in enumerate(test_file_numbers):
-        logger.debug('from file{}'.format(num + 1))
-        input_array[i] = files_dict['file{}'.format(num + 1)]
     object_list = [EcgData(filename=x) for x in filename_array]
     for i, obj in enumerate(object_list):
         (data, duration) = obj.set_duration('seconds')
@@ -61,7 +56,7 @@ def test_voltage_extremes():
     output_extremes = [(-0.68, 1.05), (-0.735, 0.955), (-1.155, 1.72),
                        (-1.58, 1.555), (-0.33077, 0.7), (-1.4525, 1.58)]
     test_file_numbers = [1, 3, 5, 10, 15, 25]
-    for i, num in test_file_numbers:
+    for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
     object_list = [EcgData(filename=x) for x in filename_array]
@@ -77,7 +72,7 @@ def test_num_beats():
     logger.debug('Begin testing number of beats')
     output_beats = [34, 34, 35, 44, 19, 34, 19]
     test_file_numbers = [1, 3, 5, 10, 16, 28, 32]
-    for i, num in test_file_numbers:
+    for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
     object_list = [EcgData(filename=x) for x in filename_array]
@@ -95,7 +90,7 @@ def test_calc_hr():
     output_beats = [34, 32, 34, 32, 35, 38, 31, 32, 28, 44, 32, 9, 4, 14, 7, 19, 19, 19,
                     19, 19, 19, 37, 75, 80, 29, 37, 63, 34, 9, 19, 19]
     test_file_numbers = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 31, 32]
-    for i, num in test_file_numbers:
+    for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
     object_list = [EcgData(filename=x) for x in filename_array]
@@ -116,7 +111,7 @@ def test_beats():
     logger.debug('Begin testing get_beat_times')
     figures = [None] * 4
     test_file_numbers = [1, 3, 21, 31]
-    for i, num in test_file_numbers:
+    for i, num in enumerate(test_file_numbers):
         filename_array[i] = 'test_data/test_data{}.csv'.format(num)
 
     object_list = [EcgData(filename=x) for x in filename_array]
